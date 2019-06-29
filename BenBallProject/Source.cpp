@@ -87,8 +87,11 @@ public:
 
 		relax = olc::SOUND::LoadAudioSample("bensound-slowmotion.wav");
 
-		float fLineRadius = 6.0f;
-		vecLines.push_back({ 1.0f, 699.0f, 1099.0f, 699.0f, fLineRadius });
+		float fLineRadius = 5.0f;
+		vecLines.push_back({0, 0, (float)ScreenWidth(), 0, fLineRadius});
+		vecLines.push_back({0, (float)ScreenHeight(), (float)ScreenWidth(), (float)ScreenHeight(), fLineRadius});
+		vecLines.push_back({0, 0, 0, (float)ScreenHeight(), fLineRadius});
+		vecLines.push_back({ (float)ScreenWidth(), 0, (float)ScreenWidth(), (float)ScreenHeight(), fLineRadius });
 		olc::SOUND::PlaySample(relax, true);
 
 		olc::SOUND::SetUserFilterFunction(MyCustomFilterFunction);
@@ -99,7 +102,7 @@ public:
 	bool OnUserUpdate(float fElapsedTime)
 	{
 		
-		float fBallRadius = 7.0f;
+		float fBallRadius = 5.0f;
 		
 
 		auto DoCirclesOverlap = [](float x1, float y1, float r1, float x2, float y2, float r2)
@@ -139,68 +142,7 @@ public:
 		if (volume < 0.0f) volume = 0.0f;
 		if (volume > 1.0f) volume = 1.0f;
 
-		if (GetMouse(0).bHeld)
-		{
-			// Check for selected ball
-			pSelectedBall = nullptr;
-			for (auto &ball : vecBalls)
-			{
-				if (IsPointInCircle(ball.px, ball.py, ball.radius, GetMouseX(), GetMouseY()))
-				{
-					pSelectedBall = &ball;
-					break;
-				}
-			}
 
-			// Check for selected line segment end
-			pSelectedLine = nullptr;
-			for (auto &line : vecLines)
-			{
-				if (IsPointInCircle(line.sx, line.sy, line.radius, GetMouseX(), GetMouseY()))
-				{
-					pSelectedLine = &line;
-					bSelectedLineStart = true;
-					break;
-				}
-
-				if (IsPointInCircle(line.ex, line.ey, line.radius, GetMouseX(), GetMouseY()))
-				{
-					pSelectedLine = &line;
-					bSelectedLineStart = false;
-					break;
-				}
-			}
-		}
-
-		if (GetMouse(1).bHeld)
-		{
-			if (pSelectedLine != nullptr)
-			{
-				if (bSelectedLineStart)
-				{
-					pSelectedLine->sx = GetMouseX();
-					pSelectedLine->sy = GetMouseY();
-				}
-				else
-				{
-					pSelectedLine->ex = GetMouseX();
-					pSelectedLine->ey = GetMouseY();
-				}
-			}
-		}
-
-		if (GetMouse(1).bReleased)
-		{
-			if (pSelectedBall != nullptr)
-			{
-				// Apply velocity
-				pSelectedBall->vx = 5.0f * ((pSelectedBall->px) - GetMouseX());
-				pSelectedBall->vy = 5.0f * ((pSelectedBall->py) - GetMouseY());
-			}
-
-			pSelectedBall = nullptr;
-			pSelectedLine = nullptr;
-		}
 
 		if (GetMouse(0).bHeld)
 		{
@@ -208,6 +150,14 @@ public:
 			{
 				ball.vx += (GetMouseX() - ball.px) * 0.3f;
 				ball.vy += (GetMouseY() - ball.py) * 0.3f;
+			}
+		}
+		if (GetMouse(0).bReleased)
+		{
+			for (auto& ball : vecBalls)
+			{
+				ball.vx += (GetMouseX() + ball.px) * 0.2f;
+				ball.vy += (GetMouseY() + ball.py) * 0.2f;
 			}
 		}
 
@@ -251,8 +201,8 @@ public:
 						ball.ox = ball.px;								// Store original position this epoch
 						ball.oy = ball.py;
 
-						ball.ax = -ball.vx * 0.6f;						// Apply drag and gravity
-						ball.ay = -ball.vy * 0.1f + 300.0f;
+						ball.ax = -ball.vx * 0.5f;						// Apply drag and gravity
+						ball.ay = -ball.vy * 0.1f + 200.0f;
 						
 
 						ball.vx += ball.ax * ball.fSimTimeRemaining;	// Update Velocity
@@ -261,16 +211,6 @@ public:
 						ball.px += ball.vx * ball.fSimTimeRemaining;	// Update position
 						ball.py += ball.vy * ball.fSimTimeRemaining;
 
-						// Crudely wrap balls to screen - note this cause issues when collisions occur on screen boundaries
-						if (ball.px < 0) ball.px += (float)ScreenWidth();
-						if (ball.px >= ScreenWidth()) ball.px -= (float)ScreenWidth();
-						// if (ball.py >= (float)ScreenHeight() || ball.py <= 0)
-						//{
-						//	ball.py = (float)ScreenHeight() - ball.radius;
-						//	ball.oy = ball.py += ball.vy;
-						//	ball.vy = 0.0f;
-						//	ball.ay = 0.0f;
-						//}
 						
 					
 						// Stop ball when velocity is neglible
@@ -356,7 +296,7 @@ public:
 								float fDistance = sqrtf((ball.px - target.px)*(ball.px - target.px) + (ball.py - target.py)*(ball.py - target.py));
 
 								// Calculate displacement required
-								float fOverlap = 0.5f * (fDistance - ball.radius - target.radius);
+								float fOverlap = 0.7f * (fDistance - ball.radius - target.radius);
 
 								// Displace Current Ball away from collision
 								ball.px -= fOverlap * (ball.px - target.px) / fDistance;
@@ -477,9 +417,12 @@ float Engine::volume = 1.0f;
 
 int main()
 {
-	Engine engine;;
+	Engine engine;
 
-	if (engine.Construct(1100, 700, 1, 1))
+	int width = 1300;
+	int height = width * 9 / 16;
+
+	if (engine.Construct(width, height, 1, 1))
 	{
 		engine.Start();
 	}
